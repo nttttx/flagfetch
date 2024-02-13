@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Flagfetch source code"""
 
+from multiprocessing import cpu_count
 from pathlib import Path
 import platform
 import os.path
@@ -45,70 +46,75 @@ CVIOLETBG2 = "\33[105m"
 CBEIGEBG2 = "\33[106m"
 CWHITEBG2 = "\33[107m"
 
+SPACER = "\t"
+
+
+def _detect_init_system() -> str:
+    detectable_files = {
+        # path to file -> init system
+        "/bin/systemctl": "SystemD",
+        "/bin/rc-status": "OpenRC",
+        "/bin/dinitctl": "Dinit",
+        "/bin/s6-svstat": "s6",
+        # FIXME: "idk": "Runit",
+        # FIXME: "idk": "Upstart",
+        
+        # ! SysVinit **MUST** be in the end
+        # * Some init systems (ex. OpenRC) can be based on SysVinit
+        "/etc/inittab": "SysVinit"
+    }
+    for file, init_system in detectable_files.items():
+        if os.path.isfile(file):
+            return init_system
+    return "Unknown init(8)"
+
 
 def print_system_flags() -> None:
     """System section"""
-    print(" " + CBOLD + platform.system() + CEND)
-
-    if platform.system() == "Linux":
-        try:
-            os_release = platform.freedesktop_os_release()    
-            print("\t" + CBOLD + "\33[" + os_release["ANSI_COLOR"] +
-                  "m" + os_release["PRETTY_NAME"] + CEND)
-        except OSError:
-            pass
-        except KeyError:
-            print("\t" + CBLINK2 + CBOLD +"???" + CEND)
-
-        # Shows if /bin, /sbin, /lib and /lib64 are linked to /usr
-        # www.freedesktop.org/wiki/Software/systemd/TheCaseForTheUsrMerge
-        if os.path.islink("/bin"):
-            print("\t" + "Merged usr")
-        else:
-            print("\t" + "Split usr")
-
-        # Init systems
-        if os.path.isfile("/bin/systemctl"):                # SystemD
-            print("\t" + CBOLD + CGREEN + "SystemD" + CEND)
-        elif os.path.isfile("/bin/rc-status"):              # OpenRC
-            print("\t" + CBOLD + CVIOLET + "OpenRC" + CEND)
-        elif os.path.isfile("/bin/dinitctl"):               # Dinit
-            print("\t" + CBOLD + "Dinit" + CEND)
-        elif os.path.isfile("/bin/s6-svstat"):              # S6
-            print("\t" + "S6")
-        elif os.path.isfile("/etc/inittab"):                # SysVinit
-            print("\t" + "SysVinit")
-
-        # libC
-        print("\t" + platform.libc_ver()[0])
-
-        # EFI/BIOS
-        if os.path.isdir(Path("/sys/firmware/efi")):
-            print("\t" + CBLUE + "EFI" + CEND)
-        else:
-            print("\t" + CRED + "BIOS" + CEND)
-    elif platform.system() == "Darwin":
-        print("\t" + CBOLD + "macOS " + CEND + platform.mac_ver()[0])
-    elif platform.system() == "Windows":
-        print("\t" + platform.win32_ver()[0])
+    print(f" {CBOLD}{platform.system()}{CEND}")
+    match platform.system():
+        case "Linux":
+            try:
+                os_release = platform.freedesktop_os_release()
+                print(
+                    f"{SPACER}{CBOLD}\33[{os_release['ANSI_COLOR']}m{os_release['PRETTY_NAME']}{CEND}")
+            except OSError:
+                # Failed to get os-release file
+                pass
+            except KeyError:
+                # os-release file was found, but we cant show distro
+                # * NEEDED: ANSI_COLOR, PRETTY_NAME
+                print(f"{SPACER}{CBLINK}{CBOLD}{CGREY}???{CEND}")
+            # Shows if /bin, /sbin, /lib and /lib64 are linked to /usr
+            # www.freedesktop.org/wiki/Software/systemd/TheCaseForTheUsrMerge
+            print(
+                f"{SPACER}{'Merged usr' if os.path.islink(Path('/bin')) else 'Split usr'}{CEND}")
+            print(f"{SPACER}{CBOLD}{_detect_init_system()}{CEND}")  # Init(8)
+            print(f"{SPACER}{platform.libc_ver()[0]}")  # libC
+            # EFI/BIOS
+            print(
+                f"{SPACER}{CBOLD}{'EFI' if os.path.isdir(Path('/sys/firmware/efi')) else 'BIOS'}{CEND}")
+        case "Darwin":
+            # TODO: show info for macOS
+            print(f"{SPACER}{CBOLD}macOS{CEND} {platform.mac_ver()[0]}")
+        case "Windows":
+            # TODO: show info for Windows
+            print(f"{SPACER}{platform.win32_ver()[0]}")
 
 
 def print_hardware_flags() -> None:
     """Hardware section"""
-    print(" " + CBOLD + platform.uname().node + CEND)
-
-    # Uhhh... Sometimes platform.processor may return empty string.
-    #if platform.processor():
-    #    print("\t" + platform.processor())
-
+    print(f" {CBOLD}{platform.node() if platform.node() else CGREY + 'Machine'}{CEND}")
     # CPU architecture
-    print("\t" + platform.uname().machine)
+    print(f"{SPACER}{platform.machine()}")
+    # CPU cores
+    print(f"{SPACER}{cpu_count()} core{'s' if cpu_count() > 1 else ''}")
 
 
 def main() -> None:
     """Entry point"""
-    print_system_flags()
     print_hardware_flags()
+    print_system_flags()
 
 
 if __name__ == "__main__":
