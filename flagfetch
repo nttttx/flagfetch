@@ -6,6 +6,7 @@ from pathlib import Path
 import platform
 import os.path
 
+# Colors
 CEND = "\33[0m"
 CBOLD = "\33[1m"
 CITALIC = "\33[3m"
@@ -51,7 +52,6 @@ SPACER = "\t"
 
 def _detect_init_system() -> str:
     detectable_files = {
-        # path to file -> init system
         "/bin/systemctl": "SystemD",
         "/bin/rc-status": "OpenRC",
         "/bin/dinitctl": "Dinit",
@@ -64,7 +64,7 @@ def _detect_init_system() -> str:
         "/etc/inittab": "SysVinit"
     }
     for file, init_system in detectable_files.items():
-        if os.path.isfile(file):
+        if os.path.isfile(Path(file)):
             return init_system
     return "Unknown init(8)"
 
