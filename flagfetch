@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Flagfetch source code"""
 
+from shutil import which
 from multiprocessing import cpu_count
 from pathlib import Path
+from typing import NoReturn
 import platform
 import os.path
 
@@ -50,23 +52,29 @@ CWHITEBG2 = "\33[107m"
 SPACER = "\t"
 
 
-def _detect_init_system() -> str:
-    detectable_files = {
-        "/bin/systemctl": "SystemD",
-        "/bin/rc-status": "OpenRC",
-        "/bin/dinitctl": "Dinit",
-        "/bin/s6-svstat": "s6",
-        # FIXME: "idk": "Runit",
-        # FIXME: "idk": "Upstart",
-        
-        # ! SysVinit **MUST** be in the end
-        # * Some init systems (ex. OpenRC) can be based on SysVinit
-        "/etc/inittab": "SysVinit"
+def _detect_init_system() -> str | None:
+    detectable_executables = {
+        "systemctl": "SystemD",
+        "rc-status": "OpenRC",
+        "dinitctl": "Dinit",
+        "s6-svstat": "s6",
+        "runsv": "Runit",
     }
-    for file, init_system in detectable_files.items():
-        if os.path.isfile(Path(file)):
+    for executable, init_system in detectable_executables.items():
+        if which(executable):
             return init_system
-    return "Unknown init(8)"
+    if Path("/etc/inittab").exists():
+        return "SysVinit"
+    return None
+
+
+def _linux() -> NoReturn:
+    raise NotImplementedError
+def _darwin() -> NoReturn:
+    raise NotImplementedError
+def _windows() -> NoReturn:
+    raise NotImplementedError
+
 
 
 def print_system_flags() -> None:
