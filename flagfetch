@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """Flagfetch source code"""
 
-from typing import AnyStr
+from pathlib import Path
+from shutil import which
+import os
 import sys
+import platform
 
 # Settings
 ## Used to print debug output.
 DEBUG = True
-
+## Separator is used to separate flags.
+SEPARATOR = " | "
 
 # Source code begins here.
-def debug(to_print: AnyStr) -> None:
+def debug(to_print):
 	"""Prints any data to stderr if DEBUG variable is set.
 
 	Args:
@@ -20,7 +24,72 @@ def debug(to_print: AnyStr) -> None:
 		sys.stderr.write(to_print)
 
 
-def main() -> None:
+def _get_distro_name():
+	"""Returns current distribution name using /etc/os-release file
+	Returns:
+		str: Host's distribution name.
+		None: When platform.freedesktop_os_release() raises Exception
+		      or when PRETTY_NAME key is missing.
+	"""
+	try:
+		os_release = platform.freedesktop_os_release()
+	except (OSError, KeyError):
+		return None
+	return os_release["PRETTY_NAME"]
+
+
+def _get_init_system():
+	"""Returns init system.
+	Init system is identified by searching for it's management executables.
+	
+	Returns:
+		str: Init system name.
+		None: When nothing was found."""
+
+	INITTAB = Path("/etc/inittab")
+	BSD_RC = Path("/etc/rc")
+	DETECTABLE = {}
+	
+	for executable_name, init_system_name in DETECTABLE.items():
+		debug(f"Checking: {executable_name} -> {init_system_name}")
+		if which(executable_name):
+			return init_system_name
+
+	debug(f"Checking for SysV's {INITTAB}")
+	if INITTAB.exists():
+		return "SysV Style Init"
+	
+	debug(f"Checking for BSD's {BSD_RC}")
+	if BSD_RC.exists():
+		return "BSD Style Init"
+
+	debug("Giving up trying to determine init system. None")
+	return None
+
+
+def _linux():
+	"""Runs when system appears to be linux."""
+	flags = [
+		_get_distro_name() or "Unknown",
+		_get_init_system() or "Unknown init(8)"
+	]
+
+	print("\t" + SEPARATOR.join(flags))
+
+
+def _darwin():
+	raise NotImplementedError
+def _windows():
+	raise NotImplementedError
+
+
+def print_hardware_flags():
+	raise NotImplementedError
+def print_software_flags():
+	raise NotImplementedError
+
+
+def main():
 	print_system_flags()
 
 
