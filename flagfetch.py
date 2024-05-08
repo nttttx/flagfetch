@@ -79,11 +79,23 @@ def _booted_using_EFI():
     Returns:
         bool: system was booted using EFI"""
 
-    EFI_FW = Path("/sys/firmware/efi")
-    booted_using_efi = EFI_FW.exists()
+    efi_fw_exists = Path("/sys/firmware/efi").exists()
 
-    debug(f"{EFI_FW}.exists() -> {booted_using_efi}")
-    return booted_using_efi
+    debug(f"efi: {efi_fw_exists}")
+    return efi_fw_exists
+
+
+def _check_usr_linkage():
+    """Checks if /lib appears to be a symlink to /usr/lib.
+    For additional information: www.freedesktop.org/wiki/Software/systemd/TheCaseForTheUsrMerge
+
+    Returns:
+        bool: /lib is symlink to /usr/lib"""
+
+    lib_is_symlink = Path("/lib").is_symlink()
+    debug(f"/lib is a symlink: {lib_is_symlink}")
+
+    return lib_is_symlink
 
 
 def _linux():
@@ -92,6 +104,7 @@ def _linux():
         _get_distro_name(),
         _get_init_system(),
         "EFI" if _booted_using_EFI() else None,
+        "Merged usr" if _check_usr_linkage() else "Split usr",
     ]
     clean_flags = list(
         filter(lambda item: item is not None, dirty_flags)
