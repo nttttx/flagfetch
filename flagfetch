@@ -67,7 +67,7 @@ def _get_init_system():
 	if BSD_RC.exists():
 		return "BSD Style Init"
 
-	debug("Giving up trying to determine init system. None")
+	debug("Giving up trying to determine the init system. None")
 	return None
 
 
