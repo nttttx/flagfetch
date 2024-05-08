@@ -33,9 +33,10 @@ def _get_distro_name():
 	"""
 	try:
 		os_release = platform.freedesktop_os_release()
+		distro_name = os_release["PRETTY_NAME"]
 	except (OSError, KeyError):
 		return None
-	return os_release["PRETTY_NAME"]
+	return distro_name
 
 
 def _get_init_system():
@@ -55,7 +56,7 @@ def _get_init_system():
 	}
 	
 	for executable_name, init_system_name in DETECTABLE.items():
-		debug(f"Checking: {executable_name} -> {init_system_name}")
+		debug(f"Checking {executable_name}: {init_system_name}")
 		if which(executable_name):
 			return init_system_name
 
@@ -71,14 +72,29 @@ def _get_init_system():
 	return None
 
 
+def _booted_using_EFI():
+	"""Returns if system was booted using EFI or BIOS
+	Basically checks if /sys/firmware/efi exists
+
+	Returns:
+		bool: system was booted using EFI
+	"""
+	EFI_FW = Path("/sys/firmware/efi")
+	booted_using_efi = EFI_FW.exists()
+
+	debug(f"{EFI_FW}.exists() -> {booted_using_efi}")
+	return booted_using_efi
+
+
 def _linux():
 	"""Runs when system appears to be linux."""
-	flags = [
-		_get_distro_name() or "Unknown",
-		_get_init_system() or "Unknown init(8)"
+	dirty_flags = [
+		_get_distro_name(),
+		_get_init_system(),
+		"EFI" if _booted_using_EFI() else None,
 	]
-
-	print("\t" + SEPARATOR.join(flags))
+	clean_flags = list(filter(lambda item: item is not None, dirty_flags))
+	print("\t" + SEPARATOR.join(clean_flags))
 
 
 def _darwin():
