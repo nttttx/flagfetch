@@ -21,7 +21,7 @@ def debug(to_print):
         to_print: Data to print. Should be any string
     """
     if DEBUG:
-        sys.stderr.write(to_print)
+        sys.stderr.write(to_print + "\n")
 
 
 def _get_distro_name():
@@ -53,6 +53,8 @@ def _get_init_system():
         "systemctl": "SystemD",
         "rc-status": "OpenRC",
         "dinitctl": "Dinit",
+        "runsv": "runit",
+        "herd": "GNU Shepherd",
     }
 
     for executable_name, init_system_name in DETECTABLE.items():
@@ -106,9 +108,11 @@ def _linux():
         "EFI" if _booted_using_EFI() else None,
         "Merged usr" if _check_usr_linkage() else "Split usr",
     ]
+
     clean_flags = list(
         filter(lambda item: item is not None, dirty_flags)
     )
+
     print("\t" + SEPARATOR.join(clean_flags))
 
 
