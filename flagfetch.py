@@ -10,7 +10,8 @@ import platform
 ## Used to print debug output.
 DEBUG = False
 ## Separator is used to separate flags.
-SEPARATOR = " | "
+SEPARATOR = " > "
+## Used to visually separate title and flags
 FLAG_LINE_BEGIN = " + "
 
 
@@ -22,7 +23,7 @@ def debug(to_print):
         to_print: Data to print. Should be any string
     """
     if DEBUG:
-        sys.stderr.write(to_print + "\n")
+        sys.stderr.write(" [DE] " + to_print + "\n")
 
 
 def _get_distro_name():
@@ -105,14 +106,14 @@ def _check_usr_linkage():
     return lib_is_symlink
 
 
-def _linux():
+def _unix():
     """Runs when system appears to be linux.
     """
     dirty_flags = [
         _get_distro_name(),
         _get_init_system(),
-        "EFI" if _booted_using_EFI() else None,
         "Merged usr" if _check_usr_linkage() else "Split usr",
+        "EFI" if _booted_using_EFI() else None, # Move to hw flags
     ]
 
     clean_flags = list(
@@ -135,13 +136,24 @@ def print_hardware_flags():
 
 def print_software_flags():
     system = platform.uname().system
+    debug(str(platform.uname()))
     print(system)
-    if system == "Linux":
-        _linux()
 
+    if system in ["Linux", "FreeBSD"]:
+        _unix()
+    elif system == "Darwin":
+        _darwin()
+    elif system == "Windows":
+        _windows()
+    else:
+        print(FLAG_LINE_BEGIN + "Unknown system")
 
 
 def main():
+    debug(f".python_implementation() -> {platform.python_implementation()}")
+    debug(f".python_version() -> {platform.python_version()}")
+    debug(f".python_build() -> {platform.python_build()}")
+    debug(f".python_compiler() -> {platform.python_compiler()}")
     print_software_flags()
 
 
