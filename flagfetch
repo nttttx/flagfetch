@@ -48,7 +48,11 @@ def _get_init_system():
 
 	INITTAB = Path("/etc/inittab")
 	BSD_RC = Path("/etc/rc")
-	DETECTABLE = {}
+	DETECTABLE = {
+		"systemctl": "SystemD",
+		"rc-status": "OpenRC",
+		"dinitctl": "Dinit"
+	}
 	
 	for executable_name, init_system_name in DETECTABLE.items():
 		debug(f"Checking: {executable_name} -> {init_system_name}")
@@ -90,7 +94,8 @@ def print_software_flags():
 
 
 def main():
-	print_system_flags()
+	print_hardware_flags()
+	print_software_flags()
 
 
 if __name__ == "__main__":
