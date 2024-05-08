@@ -8,9 +8,10 @@ import platform
 
 # Settings
 ## Used to print debug output.
-DEBUG = True
+DEBUG = False
 ## Separator is used to separate flags.
 SEPARATOR = " | "
+FLAG_LINE_BEGIN = " + "
 
 
 # Source code begins here.
@@ -31,6 +32,7 @@ def _get_distro_name():
         None: When platform.freedesktop_os_release() raises Exception
               or when PRETTY_NAME key is missing.
     """
+
     try:
         os_release = platform.freedesktop_os_release()
         distro_name = os_release["PRETTY_NAME"]
@@ -45,7 +47,8 @@ def _get_init_system():
 
     Returns:
         str: Init system name.
-        None: When nothing was found."""
+        None: When nothing was found.
+    """
 
     INITTAB = Path("/etc/inittab")
     BSD_RC = Path("/etc/rc")
@@ -79,7 +82,8 @@ def _booted_using_EFI():
     Basically checks if /sys/firmware/efi exists
 
     Returns:
-        bool: system was booted using EFI"""
+        bool: system was booted using EFI
+    """
 
     efi_fw_exists = Path("/sys/firmware/efi").exists()
 
@@ -92,7 +96,8 @@ def _check_usr_linkage():
     For additional information: www.freedesktop.org/wiki/Software/systemd/TheCaseForTheUsrMerge
 
     Returns:
-        bool: /lib is symlink to /usr/lib"""
+        bool: /lib is symlink to /usr/lib
+    """
 
     lib_is_symlink = Path("/lib").is_symlink()
     debug(f"/lib is a symlink: {lib_is_symlink}")
@@ -101,7 +106,8 @@ def _check_usr_linkage():
 
 
 def _linux():
-    """Runs when system appears to be linux."""
+    """Runs when system appears to be linux.
+    """
     dirty_flags = [
         _get_distro_name(),
         _get_init_system(),
@@ -113,7 +119,7 @@ def _linux():
         filter(lambda item: item is not None, dirty_flags)
     )
 
-    print("\t" + SEPARATOR.join(clean_flags))
+    print(FLAG_LINE_BEGIN + SEPARATOR.join(clean_flags))
 
 
 def _darwin():
@@ -127,13 +133,15 @@ def _windows():
 def print_hardware_flags():
     raise NotImplementedError
 
-
 def print_software_flags():
-    raise NotImplementedError
+    system = platform.uname().system
+    print(system)
+    if system == "Linux":
+        _linux()
+
 
 
 def main():
-    print_hardware_flags()
     print_software_flags()
 
 
