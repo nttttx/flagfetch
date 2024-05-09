@@ -1,6 +1,6 @@
 # flagfetch
 
-Flagfetch is a **dynamic** fetch utility that is trying to be compact and ship with zero dependencies (except Python).
+Flagfetch is a fetch utility that is trying to be compact and ship with zero dependencies (except Python).
 
 ## Example output
 ![Screenshot](.assets/ffdemo.png)
