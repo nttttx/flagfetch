@@ -5,6 +5,7 @@ from pathlib import Path
 from shutil import which
 import sys
 import platform
+import multiprocessing
 
 # Settings
 ## Used to print debug output.
@@ -102,51 +103,55 @@ def _check_usr_linkage():
 
     lib_is_symlink = Path("/lib").is_symlink()
     debug(f"/lib is a symlink: {lib_is_symlink}")
-
     return lib_is_symlink
 
 
-def _unix():
-    """Runs when system appears to be linux.
+def print_flags(flags):
+    """Prints all flags into stdout.
+    All None values will be ignored.
+
+    Args:
+        list(any): Flags
     """
-    dirty_flags = [
-        _get_distro_name(),
-        _get_init_system(),
-        "Merged usr" if _check_usr_linkage() else "Split usr",
-        "EFI" if _booted_using_EFI() else None, # Move to hw flags
-    ]
-
-    clean_flags = list(
-        filter(lambda item: item is not None, dirty_flags)
-    )
-
+    clean_flags = list(filter(lambda item: item is not None, flags))
     print(FLAG_LINE_BEGIN + SEPARATOR.join(clean_flags))
 
 
-def _darwin():
-    raise NotImplementedError
-
-
-def _windows():
-    raise NotImplementedError
-
-
-def print_hardware_flags():
-    raise NotImplementedError
-
 def print_software_flags():
+    """Prints software information using print_flags() function"""
     system = platform.uname().system
     debug(str(platform.uname()))
     print(system)
 
     if system in ["Linux", "FreeBSD"]:
-        _unix()
+        flags = [
+            _get_distro_name(),
+            _get_init_system(),
+            "Merged usr" if _check_usr_linkage() else "Split usr",
+        ]
     elif system == "Darwin":
-        _darwin()
+        flags = [platform.mac_ver()[0]]
     elif system == "Windows":
-        _windows()
+        flags = [platform.win32_ver(), platform.win32_edition()]
     else:
         print(FLAG_LINE_BEGIN + "Unknown system")
+        return
+    print_flags(flags)
+
+
+def print_hardware_flags():
+    """Prints hardware information"""
+    print(platform.node())
+
+    dirty_flags = [
+        platform.machine(),
+        f"{multiprocessing.cpu_count()} core CPU",
+        "EFI"
+        if _booted_using_EFI() and platform.uname().system == "Linux"
+        else None,
+    ]
+    clean_flags = list(filter(lambda item: item is not None, dirty_flags))
+    print(FLAG_LINE_BEGIN + SEPARATOR.join(clean_flags))
 
 
 def main():
@@ -155,6 +160,7 @@ def main():
     debug(f".python_build() -> {platform.python_build()}")
     debug(f".python_compiler() -> {platform.python_compiler()}")
     print_software_flags()
+    print_hardware_flags()
 
 
 if __name__ == "__main__":

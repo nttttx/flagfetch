@@ -1,5 +1,4 @@
-
-line-length = 70
+line-length = 80
 indent-width = 4
 target-version = "py38"
 
